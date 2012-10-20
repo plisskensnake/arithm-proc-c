@@ -1,6 +1,7 @@
 //---------------------------------------------------------------------------
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 //#define DEBUG
 
@@ -9,20 +10,20 @@
 #define CAD '+'
 #define CSB '-'
 #define CDV '/'
-#define CML 'x'
+#define CML '*'
 #define OPN '('
 #define CLS ')'
 
 int LIST_ID=0;
 int deep=0;
-char* exp;
+char* exp0;
 int u=0;
 
 
 
 void ExpErrorHandle(char* pos){
-	int p=pos-exp;
-	printf("Error occurred!\n%s\n",exp);
+	int p=pos-exp0;
+	printf("Error occurred!\n%s\n",exp0);
 	int i;
 	for(i=0;i<p;i++)
 		printf(" ");
@@ -76,7 +77,9 @@ int isNodeOpBin(TLISTNODE* node){
 }
 
 void freeList(TLIST* list){
+	#ifdef DEBUG
 	int id = list->id;
+	#endif
 	TLISTNODE* tmp0;
 	TLISTNODE* tmp = list->start;
 	if(tmp!=NULL) {
@@ -325,7 +328,7 @@ TLISTNODE* ListRemoveLast(TLIST *list,int fr) {
 	}
 }
 int isUnariChar(char *chr){
-	if (chr==exp)
+	if (chr==exp0)
 		return 1;
 	char *prev; prev = chr; prev--;
 	if(*prev==OPN || *prev==CSB || *prev==CAD || *prev==CML || *prev==CDV)
@@ -333,14 +336,7 @@ int isUnariChar(char *chr){
 	return 0;
 }
 
-int getPrev(char *chr) {
-	if(chr!=exp) {
-		char *prev; prev = chr; prev--;
-		int t=isSpecChar(prev);
-		return t;
-	}
-	return -1;
-}
+int getPrev(char *chr);
 
 int isSpecChar(char* chr) {
 	int p = getPrev(chr);
@@ -348,18 +344,16 @@ int isSpecChar(char* chr) {
 
 	switch (*chr) {
 		case CAD:
-			if(isUnariChar(chr))
+			if(isUnariChar(chr)){
 				if(u)
 					return -1;
-				else
-					return OP_PLUS;
+					return OP_PLUS;}
 			return OP_ADD;
 		case CSB:
-			if(isUnariChar(chr))
+			if(isUnariChar(chr)){
 				if(u)
 					return -1;
-				else
-					return OP_MINUS;
+					return OP_MINUS;}
 			return OP_SUB;
 		case CDV:
 			if(p)
@@ -376,6 +370,16 @@ int isSpecChar(char* chr) {
 		default: return 0;
 	}
 }
+
+int getPrev(char *chr) {
+	if(chr!=exp0) {
+		char *prev; prev = chr; prev--;
+		int t=isSpecChar(prev);
+		return t;
+	}
+	return -1;
+}
+
 
 TLIST* makeRPNListFromExpression(char* str) {
 	#ifdef DEBUG
@@ -465,13 +469,14 @@ TLIST* makeRPNListFromExpression(char* str) {
 			CurrNode->node = TOp;
 			ListAddNode(ret,CurrNode);
 		} else {
-				if(!co){
-
-				ExpErrorHandle(str);
-				freeList(store);
-				freeList(ret);
-				return NULL;
-			}
+				free(TOp);
+				if(!co || *str!=0){
+					ExpErrorHandle(str);
+					freeList(store);
+					freeList(ret);
+					return NULL;
+				}
+			
 		}
 	}
 	if(c!=0) {
@@ -521,11 +526,17 @@ float CalcTree(TLIST* list,int p) {
 	return ret;
 }
 
-int main(int argc, char** argv)
+int main(int argc,const char** argv)
 {
-	exp = "(-1x2)/-+1";
-	printf("Initial expression:\n%s\n",exp);
-	TLIST* list = makeRPNListFromExpression(exp);
+  char str[256];
+  int i;
+  fgets(str,256, stdin);
+  i = strlen(str)-1;
+  if( str[ i ] == '\n') 
+      str[i] = '\0';
+	exp0 =(char*) &str;
+	printf("Initial expression:\n%s\n",exp0);
+	TLIST* list = makeRPNListFromExpression(exp0);
 	if (list){
 		printList(list);
 		buildTreeFromRPN(list); 
